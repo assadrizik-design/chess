@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Chess, Square } from 'chess.js';
 import { Chessboard } from 'react-chessboard';
 import { ChessEngine } from '../engine/Stockfish';
-import { Search, Bot, Users, Swords, RefreshCw, Cpu, Trophy, AlertTriangle, Loader2, Clock, Hourglass, User, Check } from 'lucide-react';
+import { Search, Bot, Users, Swords, RefreshCw, Cpu, Trophy, AlertTriangle, Loader2, Clock, Hourglass, User, Check, Globe } from 'lucide-react';
 
 import Peer, { DataConnection } from 'peerjs';
 import clsx from 'clsx';
@@ -745,7 +745,7 @@ export const Home: React.FC<{ onNavigate: (p: string) => void, onGameChange?: (i
             </button>
 
             <div className="w-full p-6 bg-[#222] border border-[#2a2a2a] rounded-xl flex flex-col items-center justify-center text-center transition-colors">
-              <Users className="w-10 h-10 text-gray-400 mb-2" />
+              <Globe className="w-10 h-10 text-gray-400 mb-2" />
               <div className="text-lg text-white font-bold mb-1">أونلاين</div>
               
               <div className="w-full mt-4 flex flex-col items-center gap-3">
