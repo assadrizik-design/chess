@@ -7,6 +7,7 @@ import { Profile } from './pages/Profile';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { AdBanner } from './components/AdBanner';
+import chessBanner from './assets/chess_banner.png';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState('home');
@@ -30,7 +31,7 @@ export default function App() {
       {showBackground && (
          <div 
            className="fixed inset-0 z-0 opacity-10 pointer-events-none bg-cover bg-center bg-no-repeat"
-           style={{ backgroundImage: `url('/chess/chess_banner.png')` }}
+           style={{ backgroundImage: `url(${chessBanner})` }}
          />
       )}
       

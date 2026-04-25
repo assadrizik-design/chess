@@ -3,6 +3,8 @@ import { Chess, Square } from 'chess.js';
 import { Chessboard } from 'react-chessboard';
 import { ChessEngine } from '../engine/Stockfish';
 import { Search, Bot, Users, Swords, RefreshCw, Cpu, Trophy, AlertTriangle, Loader2, Clock, Hourglass, User, Check, Globe } from 'lucide-react';
+import chessBanner from '../assets/chess_banner.png';
+import chessLogo from '../assets/chess.png';
 
 import Peer, { DataConnection } from 'peerjs';
 import clsx from 'clsx';
@@ -730,7 +732,7 @@ export const Home: React.FC<{ onNavigate: (p: string) => void, onGameChange?: (i
 
       {gameMode === 'menu' && (
         <div className="bg-[#161616] border border-[#2a2a2a] w-full max-w-3xl rounded-xl p-10 shadow-2xl z-10 text-center animate-fade-in-up">
-          <img src="/chess/chess_banner.png" alt="Banner" className="w-full h-48 object-cover rounded-xl shadow-xl mb-6 border border-[#2a2a2a]" />
+          <img src={chessBanner} alt="Banner" className="w-full h-48 object-cover rounded-xl shadow-xl mb-6 border border-[#2a2a2a]" />
           <h2 className="text-4xl font-extrabold text-[#e0e0e0] mb-4 tracking-tight">اللعب والتدريب</h2>
           <p className="text-gray-400 text-sm mb-10">العب ضد المحرك الأقوى في العالم، اختبر مهاراتك مع أصدقائك مباشرة، أو قم بحل ألغاز الشطرنج الممتعة!</p>
 
@@ -739,7 +741,7 @@ export const Home: React.FC<{ onNavigate: (p: string) => void, onGameChange?: (i
               onClick={() => { setGameMode('bot-setup'); }}
               className="w-full py-4 px-4 bg-amber-600 hover:bg-amber-500 text-black font-bold rounded-xl text-sm flex flex-col items-center justify-center shadow-lg transition-colors focus:ring-2 focus:ring-amber-500"
             >
-              <img src="/chess/chess.png" alt="Bot Mode" className="w-14 h-14 rounded-full mb-3 object-cover shadow-inner bg-black/10" />
+              <img src={chessLogo} alt="Bot Mode" className="w-14 h-14 rounded-full mb-3 object-cover shadow-inner bg-black/10" />
               <div className="text-xl mb-1">ضد البوت</div>
               <div className="text-black/70 text-xs text-center px-1">محرك ذكي جداً وصعب وتتغير تكتيكاته.</div>
             </button>
@@ -790,7 +792,7 @@ export const Home: React.FC<{ onNavigate: (p: string) => void, onGameChange?: (i
 
       {gameMode === 'bot-setup' && (
         <div className="bg-[#161616] border border-[#2a2a2a] w-full max-w-md rounded-xl p-8 shadow-2xl z-10 text-center animate-fade-in">
-           <img src="/chess/chess.png" alt="Bot Mode" className="w-20 h-20 rounded-full mx-auto mb-4 object-cover shadow-inner bg-black/10" />
+           <img src={chessLogo} alt="Bot Mode" className="w-20 h-20 rounded-full mx-auto mb-4 object-cover shadow-inner bg-black/10" />
            <h2 className="text-2xl font-bold text-white mb-6">اختر مستوى الصعوبة</h2>
            <div className="flex flex-col gap-3">
              <button onClick={() => { setBotLevel('easy'); initGame(); setGameMode('bot'); }} className="bg-[#222] hover:bg-amber-500 hover:text-black text-gray-300 font-bold py-3 rounded-lg border border-[#2a2a2a] transition-all">
