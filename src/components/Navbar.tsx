@@ -26,7 +26,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
   return (
     <nav className="h-16 border-b border-[#2a2a2a] flex items-center justify-between px-4 sm:px-8 bg-[#111111] sticky top-0 z-50">
       <div className="flex-shrink-0 cursor-pointer flex items-center gap-3" onClick={() => onNavigate('home')}>
-        <img src={`${import.meta.env.BASE_URL}chess.png`} alt="Logo" className="w-8 h-8 rounded-full shadow-inner hidden sm:block object-cover" />
+        <img src="./chess.png" alt="Logo" className="w-8 h-8 rounded-full shadow-inner hidden sm:block object-cover" />
         <span className="text-xl font-bold tracking-tighter text-white">
           gamer<span className="text-amber-500">spaces</span>
         </span>

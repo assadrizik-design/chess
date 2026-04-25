@@ -30,7 +30,7 @@ export default function App() {
       {showBackground && (
          <div 
            className="fixed inset-0 z-0 opacity-10 pointer-events-none bg-cover bg-center bg-no-repeat"
-           style={{ backgroundImage: `url(${import.meta.env.BASE_URL}chess_banner.png)` }}
+           style={{ backgroundImage: `url(./chess_banner.png)` }}
          />
       )}
       
