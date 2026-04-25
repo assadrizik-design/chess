@@ -50,6 +50,32 @@ export const Home: React.FC<{ onNavigate: (p: string) => void, onGameChange?: (i
   const [blackTime, setBlackTime] = useState(INITIAL_TIME_SEC);
   const [timerActive, setTimerActive] = useState(false);
 
+  // Ad and tracking state
+  const [gameStartTime, setGameStartTime] = useState(Date.now());
+  const [showAdOverlay, setShowAdOverlay] = useState(false);
+  const [adTimer, setAdTimer] = useState(30);
+  const [adCanSkip, setAdCanSkip] = useState(false);
+
+  useEffect(() => {
+    let adInterval: any;
+    if (showAdOverlay) {
+      setAdTimer(30);
+      setAdCanSkip(false);
+      adInterval = setInterval(() => {
+        setAdTimer(prev => {
+           if (prev <= 20) setAdCanSkip(true);
+           if (prev <= 1) {
+              clearInterval(adInterval);
+              setShowAdOverlay(false);
+              return 0;
+           }
+           return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(adInterval);
+  }, [showAdOverlay]);
+
   // Time format helper
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -63,6 +89,12 @@ export const Home: React.FC<{ onNavigate: (p: string) => void, onGameChange?: (i
   };
 
   const saveToHistory = (currGame: Chess, outcomeStr: string) => {
+    // Show Ad if game lasted more than 4 minutes (240,000 ms) and it's not a local game
+    const elapsedTime = Date.now() - gameStartTime;
+    if (elapsedTime > 4 * 60 * 1000 && gameMode !== 'menu') {
+       setShowAdOverlay(true);
+    }
+
     try {
       const saved = localStorage.getItem('chess_history');
       const historyArr = saved ? JSON.parse(saved) : [];
@@ -137,6 +169,7 @@ export const Home: React.FC<{ onNavigate: (p: string) => void, onGameChange?: (i
     setWhiteTime(INITIAL_TIME_SEC);
     setBlackTime(INITIAL_TIME_SEC);
     setTimerActive(false);
+    setGameStartTime(Date.now());
   };
 
   useEffect(() => {
@@ -656,6 +689,41 @@ export const Home: React.FC<{ onNavigate: (p: string) => void, onGameChange?: (i
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[80vh] py-6 relative">
+      {showAdOverlay && (
+        <div className="fixed inset-0 z-[100] bg-[#0a0a0add] backdrop-blur-sm flex flex-col items-center justify-center p-4">
+           <div className="flex-1 w-full max-w-lg mx-auto flex flex-col items-center justify-center p-6 text-center animate-fade-in-up">
+              <h2 className="text-2xl font-bold text-amber-500 mb-6">مساحة إعلانية</h2>
+              <div className="w-full bg-[#111] rounded-xl overflow-hidden border border-[#2a2a2a] min-h-[250px] flex items-center justify-center relative shadow-2xl">
+                 <ins className="adsbygoogle w-full h-[250px]"
+                      style={{ display: 'block' }}
+                      data-ad-client="ca-pub-8216688270722962"
+                      data-ad-slot="1234567890" // User can change this ad-slot
+                      data-ad-format="auto"
+                      data-full-width-responsive="true"></ins>
+                 <div className="absolute inset-x-0 bottom-2 text-xs text-gray-500 font-mono text-center pointer-events-none">جارِ التحميل...</div>
+              </div>
+           </div>
+           
+           <div className="mb-10 w-full flex flex-col items-center gap-4 animate-fade-in text-center px-4">
+              <p className="text-gray-400 font-mono text-sm max-w-xs leading-relaxed">بقاءك هنا يساعدنا على الاستمرار في تطوير اللعبة والحفاظ على محركاتها القوية مجاناً.</p>
+              <div className="flex flex-col items-center mt-2">
+                <span className="text-amber-500/70 font-bold mb-2">ينتهي في {adTimer}ث</span>
+                {adCanSkip ? (
+                   <button onClick={() => setShowAdOverlay(false)} className="bg-amber-600 hover:bg-amber-500 text-black px-10 py-3.5 rounded-xl font-bold shadow-lg transition-all transform hover:scale-105 active:scale-95 uppercase tracking-wider text-sm flex items-center gap-2">
+                       تخطي الإعلان
+                       <Check size={18} />
+                   </button>
+                ) : (
+                   <button disabled className="bg-[#222] text-gray-600 border border-[#333] px-10 py-3.5 rounded-xl cursor-not-allowed uppercase tracking-wider text-sm flex items-center gap-2 transition-all">
+                       تخطي الإعلان ({adTimer - 20})
+                       <Clock size={16} />
+                   </button>
+                )}
+              </div>
+           </div>
+        </div>
+      )}
+
       {/* Decorative background gradients */}
       <div className="absolute top-1/4 -right-32 w-96 h-96 bg-amber-500/10 rounded-full blur-[100px] pointer-events-none" />
       <div className="absolute bottom-1/4 -left-32 w-96 h-96 bg-indigo-500/10 rounded-full blur-[100px] pointer-events-none" />
