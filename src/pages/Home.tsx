@@ -3,8 +3,8 @@ import { Chess, Square } from 'chess.js';
 import { Chessboard } from 'react-chessboard';
 import { ChessEngine } from '../engine/Stockfish';
 import { Search, Bot, Users, Swords, RefreshCw, Cpu, Trophy, AlertTriangle, Loader2, Clock, Hourglass, User, Check, Globe } from 'lucide-react';
-import chessBanner from '../assets/chess_banner.png';
-import chessLogo from '../assets/chess.png';
+const chessBanner = 'https://img.sanishtech.com/u/84bee4c146cf0263c8a3022ae33b76d9.png';
+const chessLogo = 'https://img.sanishtech.com/u/a00ba3f0a44eb35af254c3875075c2c8.png';
 
 import Peer, { DataConnection } from 'peerjs';
 import clsx from 'clsx';
