@@ -77,24 +77,34 @@ export const Profile: React.FC = () => {
   const stepForward = () => {
     if (!replayingGame) return;
     if (replayIndex < replayingGame.moves.length) {
-      const c = new Chess();
-      for (let i = 0; i <= replayIndex; i++) {
-        c.move(replayingGame.moves[i]);
+      try {
+        const c = new Chess();
+        for (let i = 0; i <= replayIndex; i++) {
+          c.move(replayingGame.moves[i]);
+        }
+        setReplayFen(c.fen());
+        setReplayIndex(replayIndex + 1);
+      } catch(e) {
+        alert("عذراً، هذا السجل قديم أو يفتقر للحركات الكاملة ولا يمكن إعادته.");
+        console.error(e);
       }
-      setReplayFen(c.fen());
-      setReplayIndex(replayIndex + 1);
     }
   };
 
   const stepBackward = () => {
     if (!replayingGame) return;
     if (replayIndex > 0) {
-      const c = new Chess();
-      for (let i = 0; i < replayIndex - 1; i++) {
-        c.move(replayingGame.moves[i]);
+      try {
+        const c = new Chess();
+        for (let i = 0; i < replayIndex - 1; i++) {
+          c.move(replayingGame.moves[i]);
+        }
+        setReplayFen(c.fen());
+        setReplayIndex(replayIndex - 1);
+      } catch(e) {
+        alert("عذراً، هذا السجل قديم أو يفتقر للحركات الكاملة ولا يمكن إعادته.");
+        console.error(e);
       }
-      setReplayFen(c.fen());
-      setReplayIndex(replayIndex - 1);
     }
   };
 

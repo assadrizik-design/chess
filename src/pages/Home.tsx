@@ -192,6 +192,22 @@ export const Home: React.FC<{
     saveToHistory(game, outcomeStr);
   };
 
+  const endOnlineMatch = () => {
+    if (connection) {
+      connection.close();
+      setConnection(null);
+    }
+    if (peerInstance.current) {
+      peerInstance.current.destroy();
+      peerInstance.current = null;
+    }
+    setGameMode("menu");
+    setMatchmakingState("idle");
+    setStatusText("جاهز للعب");
+    setGameOver("");
+    initGame();
+  };
+
   useEffect(() => {
     let timer: any;
     if (
@@ -1229,13 +1245,22 @@ export const Home: React.FC<{
               </div>
 
               <div className="flex items-center gap-2">
-                <button
-                  onClick={handleResign}
-                  disabled={!!gameOver}
-                  className="bg-red-900/20 hover:bg-red-900/40 border border-red-900/50 text-red-500 px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-widest font-bold transition-colors disabled:opacity-50"
-                >
-                  انسحاب
-                </button>
+                {gameMode === "online" && gameOver ? (
+                  <button
+                    onClick={endOnlineMatch}
+                    className="bg-amber-600 hover:bg-amber-500 text-black px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-widest font-bold transition-colors"
+                  >
+                    إنهاء المباراة
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleResign}
+                    disabled={!!gameOver}
+                    className="bg-red-900/20 hover:bg-red-900/40 border border-red-900/50 text-red-500 px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-widest font-bold transition-colors disabled:opacity-50"
+                  >
+                    انسحاب
+                  </button>
+                )}
                 {gameMode !== "online" && (
                   <button
                     onClick={initGame}
