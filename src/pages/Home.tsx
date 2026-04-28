@@ -331,22 +331,21 @@ export const Home: React.FC<{
     gameOver,
   ]);
 
+  const LOBBY_PEER_ID = "CHESS_ARABIC_GLOBAL_LOBBY_V2";
+
   const cleanupConnection = () => {
-    if (peerInstance.current) {
-      peerInstance.current.disconnect();
-      peerInstance.current.destroy();
-      peerInstance.current = null;
-    }
     if (connection) {
       connection.close();
       setConnection(null);
+    }
+    if (peerInstance.current) {
+      peerInstance.current.destroy();
+      peerInstance.current = null;
     }
     setMatchmakingState("idle");
     setCurrentMatchId("");
     setGameMode("menu");
   };
-
-  const LOBBY_PEER_ID = "CHESS_ARABIC_GLOBAL_LOBBY_2028";
 
   const startMatchmaking = () => {
     cleanupConnection();
@@ -360,11 +359,13 @@ export const Home: React.FC<{
       peerInstance.current = clientPeer;
 
       clientPeer.on("open", () => {
+        if (peerInstance.current !== clientPeer) return;
         // Try connecting to the global lobby
         const conn = clientPeer.connect(LOBBY_PEER_ID, { reliable: true });
 
         conn.on("open", () => {
-          // Connected! We are the client. The lobby exists.
+          if (peerInstance.current !== clientPeer) return;
+          // Connected! We are the client.
           setConnection(conn);
           setIsHost(false);
           setGameMode("online");
@@ -381,6 +382,7 @@ export const Home: React.FC<{
         });
 
         conn.on("error", () => {
+          if (peerInstance.current !== clientPeer) return;
           // Could fail if lobby dies during connection
           if (peerInstance.current === clientPeer) {
             clientPeer.destroy();
@@ -390,6 +392,7 @@ export const Home: React.FC<{
       });
 
       clientPeer.on("error", (err: any) => {
+        if (peerInstance.current !== clientPeer) return;
         if (err.type === "peer-unavailable" && peerInstance.current === clientPeer) {
           // Lobby doesn't exist, we must become the lobby!
           clientPeer.destroy();
@@ -403,19 +406,28 @@ export const Home: React.FC<{
       const lobbyPeer = new PeerJS(LOBBY_PEER_ID);
       peerInstance.current = lobbyPeer;
 
+      let hasMatch = false;
+
       lobbyPeer.on("open", () => {
+        if (peerInstance.current !== lobbyPeer) return;
         if (peerInstance.current === lobbyPeer) {
           setStatusText("في انتظار انضمام لاعب آخر...");
         }
       });
 
       lobbyPeer.on("connection", (conn: any) => {
-        // Someone connected! 
-        // Immediately disconnect from signaling so we stop being the lobby,
-        // allowing someone else to take the LOBBY_PEER_ID for matchmaking.
-        lobbyPeer.disconnect();
-
+        if (peerInstance.current !== lobbyPeer) return;
+        // Someone connected!
         conn.on("open", () => {
+          if (peerInstance.current !== lobbyPeer) return;
+          if (hasMatch) {
+            conn.close();
+            return;
+          }
+          hasMatch = true;
+          // IMPORTANT: disconnect from signaling server so LOBBY_PEER_ID is free, but keep active conn!
+          lobbyPeer.disconnect();
+
           setConnection(conn);
           setIsHost(true);
           setGameMode("online");
@@ -433,6 +445,7 @@ export const Home: React.FC<{
       });
 
       lobbyPeer.on("error", (err: any) => {
+        if (peerInstance.current !== lobbyPeer) return;
         // If someone else snatched the Lobby ID just as we tried
         if (err.type === "unavailable-id" && peerInstance.current === lobbyPeer) {
           lobbyPeer.destroy();
