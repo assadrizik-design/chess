@@ -351,7 +351,13 @@ export const Home: React.FC<{
     gameOver,
   ]);
 
-  const startMatchmaking = () => {
+  const startMatchmaking = (lobbyIndex = 1) => {
+    if (lobbyIndex > 10) {
+      setMatchmakingState("idle");
+      setStatusText("تعذر العثور على سيرفر متاح. يرجى المحاولة لاحقاً.");
+      return;
+    }
+
     setMatchmakingState("searching");
     setStatusText("جاري البحث عن لاعب...");
 
@@ -361,7 +367,7 @@ export const Home: React.FC<{
       peerInstance.current = null;
     }
 
-    const LOBBY_ID = "CHESS_ARABIC_PRO_LOBBY_v3";
+    const LOBBY_ID = `CHESS_ARABIC_PRO_LOBBY_v5_${lobbyIndex}`;
     const PeerJS = (Peer as any).default || Peer;
     const lobbyPeer = new PeerJS(LOBBY_ID);
 
@@ -391,9 +397,20 @@ export const Home: React.FC<{
 
         clientPeer.on("open", () => {
           const conn = clientPeer.connect(LOBBY_ID);
+          let receivedRedirect = false;
+
+          const ghostTimeout = setTimeout(() => {
+            if (!receivedRedirect && peerInstance.current === clientPeer) {
+              // Ghost lobby detected!
+              clientPeer.destroy();
+              startMatchmaking(lobbyIndex + 1); // Try next lobby
+            }
+          }, 4000);
 
           conn.on("data", (data: any) => {
             if (data.type === "REDIRECT") {
+              receivedRedirect = true;
+              clearTimeout(ghostTimeout);
               clientPeer.destroy();
               setTimeout(() => {
                 setupMatchClient(data.matchId);
@@ -402,10 +419,11 @@ export const Home: React.FC<{
           });
 
           conn.on("error", () => {
+            clearTimeout(ghostTimeout);
             // Could fail if lobby was destroyed exactly now
             clientPeer.destroy();
             setTimeout(() => {
-              if (peerInstance.current === clientPeer) startMatchmaking();
+              if (peerInstance.current === clientPeer) startMatchmaking(lobbyIndex);
             }, 1000);
           });
         });
