@@ -21,7 +21,7 @@ import {
 const chessBanner = "https://i.postimg.cc/CMjdMqJH/chess-banner.png";
 const chessLogo = "https://i.postimg.cc/90348Pbf/chess.png";
 
-import { io, Socket } from "socket.io-client";
+import Peer, { DataConnection } from "peerjs";
 import clsx from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -66,9 +66,9 @@ export const Home: React.FC<{
   const [matchmakingState, setMatchmakingState] = useState<
     "idle" | "searching" | "found"
   >("idle");
-  const [connection, setConnection] = useState<Socket | null>(null);
+  const [connection, setConnection] = useState<DataConnection | null>(null);
   const [isHost, setIsHost] = useState(true); // Host plays white by default
-  const peerInstance = useRef<Socket | null>(null);
+  const peerInstance = useRef<Peer | null>(null);
   const [currentMatchId, setCurrentMatchId] = useState("");
 
   // Status
@@ -187,7 +187,7 @@ export const Home: React.FC<{
     setGameOver(outcomeStr);
 
     if (gameMode === "online" && connection) {
-      connection.emit("resign", { matchId: currentMatchId });
+      connection.send({ type: "resign" });
     }
 
     saveToHistory(game, outcomeStr);
@@ -331,54 +331,121 @@ export const Home: React.FC<{
     gameOver,
   ]);
 
+  const cleanupConnection = () => {
+    if (peerInstance.current) {
+      peerInstance.current.disconnect();
+      peerInstance.current.destroy();
+      peerInstance.current = null;
+    }
+    if (connection) {
+      connection.close();
+      setConnection(null);
+    }
+    setMatchmakingState("idle");
+    setCurrentMatchId("");
+    setGameMode("menu");
+  };
+
+  const LOBBY_PEER_ID = "CHESS_ARABIC_GLOBAL_LOBBY_2028";
+
   const startMatchmaking = () => {
+    cleanupConnection();
+    setGameMode("menu");
     setMatchmakingState("searching");
     setStatusText("جاري البحث عن لاعب...");
 
-    // Clean up any existing socket
-    if (peerInstance.current) {
-      peerInstance.current.disconnect();
-      peerInstance.current = null;
-    }
+    const tryConnectAsClient = () => {
+      const PeerJS = (Peer as any).default || Peer;
+      const clientPeer = new PeerJS(); // random peer ID
+      peerInstance.current = clientPeer;
 
-    const socket = io();
-    peerInstance.current = socket;
-    setConnection(socket);
+      clientPeer.on("open", () => {
+        // Try connecting to the global lobby
+        const conn = clientPeer.connect(LOBBY_PEER_ID, { reliable: true });
 
-    socket.on("connect", () => {
-      socket.emit("search");
-    });
+        conn.on("open", () => {
+          // Connected! We are the client. The lobby exists.
+          setConnection(conn);
+          setIsHost(false);
+          setGameMode("online");
+          setMatchmakingState("found");
+          initGame();
+          setStatusText("تم العثور على خصم! أنت تلعب بالقطع السوداء.");
 
-    socket.on("matched", ({ matchId, color }) => {
-      setCurrentMatchId(matchId);
-      setIsHost(color === "white");
-      setGameMode("online");
-      setMatchmakingState("found");
-      initGame();
-      setStatusText(color === "white" ? "تم العثور على خصم! أنت تلعب بالقطع البيضاء." : "تم العثور على خصم! أنت تلعب بالقطع السوداء.");
-    });
+          conn.on("data", handleIncomingMove);
+          conn.on("close", () => {
+            if (peerInstance.current === clientPeer) {
+              setStatusText("انقطع الاتصال بالخصم.");
+            }
+          });
+        });
 
-    socket.on("moved", ({ move }) => {
-      handleIncomingMove({ type: "move", move });
-    });
+        conn.on("error", () => {
+          // Could fail if lobby dies during connection
+          if (peerInstance.current === clientPeer) {
+            clientPeer.destroy();
+            becomeLobby(); // Fall back to becoming lobby
+          }
+        });
+      });
 
-    socket.on("opponent_resigned", () => {
-      handleIncomingMove({ type: "resign" });
-    });
+      clientPeer.on("error", (err: any) => {
+        if (err.type === "peer-unavailable" && peerInstance.current === clientPeer) {
+          // Lobby doesn't exist, we must become the lobby!
+          clientPeer.destroy();
+          becomeLobby();
+        }
+      });
+    };
 
-    socket.on("opponent_disconnected", () => {
-      setStatusText("انقطع الاتصال بالخصم. تم قطع المباراة...");
-    });
+    const becomeLobby = () => {
+      const PeerJS = (Peer as any).default || Peer;
+      const lobbyPeer = new PeerJS(LOBBY_PEER_ID);
+      peerInstance.current = lobbyPeer;
+
+      lobbyPeer.on("open", () => {
+        if (peerInstance.current === lobbyPeer) {
+          setStatusText("في انتظار انضمام لاعب آخر...");
+        }
+      });
+
+      lobbyPeer.on("connection", (conn: any) => {
+        // Someone connected! 
+        // Immediately disconnect from signaling so we stop being the lobby,
+        // allowing someone else to take the LOBBY_PEER_ID for matchmaking.
+        lobbyPeer.disconnect();
+
+        conn.on("open", () => {
+          setConnection(conn);
+          setIsHost(true);
+          setGameMode("online");
+          setMatchmakingState("found");
+          initGame();
+          setStatusText("تم العثور على خصم! أنت تلعب بالقطع البيضاء.");
+
+          conn.on("data", handleIncomingMove);
+          conn.on("close", () => {
+             if (peerInstance.current === lobbyPeer) {
+               setStatusText("انقطع الاتصال بالخصم.");
+             }
+          });
+        });
+      });
+
+      lobbyPeer.on("error", (err: any) => {
+        // If someone else snatched the Lobby ID just as we tried
+        if (err.type === "unavailable-id" && peerInstance.current === lobbyPeer) {
+          lobbyPeer.destroy();
+          tryConnectAsClient(); // Re-try as client
+        }
+      });
+    };
+
+    tryConnectAsClient();
   };
 
   const cancelMatchmaking = () => {
-    if (peerInstance.current) {
-      peerInstance.current.emit("cancel_search");
-      peerInstance.current.disconnect();
-      peerInstance.current = null;
-    }
-    setConnection(null);
-    setMatchmakingState("idle");
+    cleanupConnection();
     setStatusText("تم إلغاء البحث.");
   };
 
@@ -514,7 +581,7 @@ export const Home: React.FC<{
       checkGameOver(gameCopy);
 
       if (gameMode === "online" && connection) {
-        connection.emit("move", { matchId: currentMatchId, move: move.san });
+        connection.send({ type: "move", move: move.san });
       }
 
       if (gameMode === "bot" && !gameCopy.isGameOver()) {
@@ -620,7 +687,7 @@ export const Home: React.FC<{
       checkGameOver(gameCopy);
 
       if (gameMode === "online" && connection) {
-        connection.emit("move", { matchId: currentMatchId, move: move.san });
+        connection.send({ type: "move", move: move.san });
       }
 
       if (gameMode === "bot" && !gameCopy.isGameOver()) {
@@ -708,7 +775,7 @@ export const Home: React.FC<{
       checkGameOver(gameCopy);
 
       if (gameMode === "online" && connection) {
-        connection.emit("move", { matchId: currentMatchId, move: move.san });
+        connection.send({ type: "move", move: move.san });
       }
 
       if (gameMode === "bot" && !gameCopy.isGameOver()) {
@@ -914,7 +981,7 @@ export const Home: React.FC<{
             </button>
           </div>
           <button
-            onClick={() => setGameMode("menu")}
+            onClick={cleanupConnection}
             className="mt-6 text-sm text-gray-500 hover:text-white transition-colors"
           >
             العودة للقائمة
@@ -929,10 +996,7 @@ export const Home: React.FC<{
             {/* Header Game Info */}
             <div className="flex justify-between items-center mb-6 px-1">
               <button
-                onClick={() => {
-                  setGameMode("menu");
-                  connection?.close();
-                }}
+                onClick={cleanupConnection}
                 className="bg-[#222] hover:bg-[#333] border border-[#2a2a2a] px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors flex items-center gap-2 text-gray-400 hover:text-white"
               >
                 العودة للقائمة
