@@ -284,9 +284,11 @@ export const Profile: React.FC = () => {
             </div>
             <div className="relative rounded bg-[#222] border-4 border-[#222] shadow-black shadow-2xl">
               <Chessboard
-                position={replayFen}
-                customDarkSquareStyle={{ backgroundColor: "#714e3b" }}
-                customLightSquareStyle={{ backgroundColor: "#d4b58c" }}
+                options={{
+                  position: replayFen,
+                  darkSquareStyle: { backgroundColor: "#714e3b" },
+                  lightSquareStyle: { backgroundColor: "#d4b58c" }
+                }}
               />
             </div>
             <div className="flex justify-between items-center mt-6 bg-[#111] p-2 rounded-lg border border-[#2a2a2a]">
