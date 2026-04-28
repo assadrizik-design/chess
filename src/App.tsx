@@ -7,7 +7,7 @@ import { Profile } from './pages/Profile';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { AdBanner } from './components/AdBanner';
-const chessBanner = 'https://img.sanishtech.com/u/84bee4c146cf0263c8a3022ae33b76d9.png';
+const chessBanner = 'https://i.postimg.cc/CMjdMqJH/chess-banner.png';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState('home');

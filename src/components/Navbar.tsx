@@ -2,7 +2,7 @@ import React from 'react';
 import { Shield, Info, Mail, Menu, X, Gamepad2, Lightbulb, User } from 'lucide-react';
 import clsx from 'clsx';
 import { twMerge } from 'tailwind-merge';
-const chessLogo = 'https://img.sanishtech.com/u/a00ba3f0a44eb35af254c3875075c2c8.png';
+const chessLogo = 'https://i.postimg.cc/90348Pbf/chess.png';
 
 export function cn(...inputs: (string | undefined | null | false)[]) {
   return twMerge(clsx(inputs));

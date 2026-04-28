@@ -11,6 +11,7 @@ export type GameRecord = {
   outcome: string;
   opponent: string;
   finalFen: string;
+  userResult?: 'win' | 'loss' | 'draw';
 };
 
 export const Profile: React.FC = () => {
@@ -18,13 +19,31 @@ export const Profile: React.FC = () => {
   const [replayingGame, setReplayingGame] = useState<GameRecord | null>(null);
   const [replayIndex, setReplayIndex] = useState(0);
   const [replayFen, setReplayFen] = useState('start');
+  const [profilePic, setProfilePic] = useState<string | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem('chess_history');
     if (saved) {
       setHistory(JSON.parse(saved));
     }
+    const savedPic = localStorage.getItem('chess_profile_pic');
+    if (savedPic) {
+       setProfilePic(savedPic);
+    }
   }, []);
+
+  const handlePicUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+     if (e.target.files && e.target.files[0]) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+           if (event.target?.result) {
+              setProfilePic(event.target.result as string);
+              localStorage.setItem('chess_profile_pic', event.target.result as string);
+           }
+        };
+        reader.readAsDataURL(e.target.files[0]);
+     }
+  };
 
   const clearHistory = () => {
     if (confirm('هل أنت متأكد من مسح السجل بأكمله؟')) {
@@ -67,6 +86,11 @@ export const Profile: React.FC = () => {
     }
   };
 
+  const wins = history.filter(g => g.userResult === 'win' || (!g.userResult && g.outcome.includes('فاز'))).length;
+  const losses = history.filter(g => g.userResult === 'loss' || (!g.userResult && !g.outcome.includes('فاز') && !g.outcome.includes('تعادل') && g.outcome.includes('!'))).length;
+  const draws = history.filter(g => g.userResult === 'draw' || (!g.userResult && (g.outcome.includes('تعادل') || g.outcome.includes('تكرار') || g.outcome.includes('ستالميت')))).length;
+  const rating = 1200 + (wins * 15) - (losses * 10);
+
   return (
     <div className="max-w-6xl mx-auto space-y-8 text-[#e0e0e0] leading-relaxed font-sans w-full py-6">
       
@@ -75,26 +99,53 @@ export const Profile: React.FC = () => {
           {/* Profile Card */}
           <div className="lg:col-span-1 flex flex-col gap-4">
             <div className="bg-[#161616] border border-[#2a2a2a] p-6 rounded-xl shadow-xl flex flex-col items-center text-center">
-              <div className="w-24 h-24 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center mb-4 shadow-xl border-4 border-[#222]">
-                <User size={40} className="text-white" />
+              <div className="relative group cursor-pointer w-28 h-28 mb-4">
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+                  onChange={handlePicUpload}
+                />
+                <div className="w-full h-full bg-[#222] rounded-full flex items-center justify-center shadow-xl border-4 border-[#333] overflow-hidden transition-all group-hover:border-amber-500">
+                  {profilePic ? (
+                    <img src={profilePic} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    <User size={48} className="text-gray-500 group-hover:text-amber-500 transition-colors" />
+                  )}
+                </div>
+                <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                  <span className="text-white text-xs font-bold px-2 text-center text-balance leading-tight">تغيير الصورة</span>
+                </div>
               </div>
+
               <h2 className="text-2xl font-bold text-white uppercase tracking-wider mb-1">اللاعب 1</h2>
-              <p className="text-gray-500 text-sm font-mono tracking-widest uppercase">التقييم: 1200</p>
+              <p className="text-amber-500 text-lg font-mono tracking-widest uppercase">التقييم: {rating}</p>
               
-              <div className="w-full border-t border-[#2a2a2a] mt-6 pt-6 flex justify-around">
+              <div className="w-full border-t border-[#2a2a2a] mt-6 pt-6 grid grid-cols-3 gap-2">
                  <div className="flex flex-col items-center">
-                    <span className="text-gray-500 text-xs uppercase">المباريات</span>
-                    <span className="text-white font-bold text-xl">{history.length}</span>
+                    <span className="text-green-500 text-xs uppercase mb-1">فوز</span>
+                    <span className="text-white font-bold text-xl">{wins}</span>
                  </div>
-                 <div className="w-px h-full bg-[#2a2a2a]"></div>
-                 <div className="flex flex-col items-center">
-                    <span className="text-green-500 text-xs uppercase">فوز</span>
-                    <span className="text-white font-bold text-xl">
-                      {history.filter(g => g.outcome.includes('فاز')).length}
-                    </span>
+                 <div className="flex flex-col items-center border-l lg:border-l-0 lg:border-r border-[#2a2a2a] pl-2 lg:pl-0 lg:pr-2">
+                    <span className="text-gray-500 text-xs uppercase mb-1">تعادل</span>
+                    <span className="text-white font-bold text-xl">{draws}</span>
+                 </div>
+                 <div className="flex flex-col items-center border-l lg:border-l-0 lg:border-r border-[#2a2a2a] pl-2 lg:pl-0 lg:pr-2">
+                    <span className="text-red-500 text-xs uppercase mb-1">خسارة</span>
+                    <span className="text-white font-bold text-xl">{losses}</span>
                  </div>
               </div>
             </div>
+            
+            <div className="bg-[#161616] border border-[#2a2a2a] p-4 rounded-xl shadow-xl flex items-center justify-between text-sm">
+                <span className="text-gray-400">إجمالي المباريات</span>
+                <span className="text-white font-bold font-mono text-lg">{history.length}</span>
+            </div>
+            {history.length > 0 && (
+                <button onClick={clearHistory} className="w-full py-3 rounded-lg border border-red-900/50 bg-red-900/10 hover:bg-red-900/20 text-red-500 font-bold transition-colors">
+                    مسح السجل
+                </button>
+            )}
           </div>
           
           {/* Match History */}
@@ -152,11 +203,9 @@ export const Profile: React.FC = () => {
               </div>
               <div className="relative rounded bg-[#222] border-4 border-[#222] shadow-black shadow-2xl">
                  <Chessboard
-                    options={{
-                       position: replayFen,
-                       darkSquareStyle: { backgroundColor: '#714e3b' },
-                       lightSquareStyle: { backgroundColor: '#d4b58c' },
-                    }}
+                    position={replayFen}
+                    customDarkSquareStyle={{ backgroundColor: '#714e3b' }}
+                    customLightSquareStyle={{ backgroundColor: '#d4b58c' }}
                  />
               </div>
               <div className="flex justify-between items-center mt-6 bg-[#111] p-2 rounded-lg border border-[#2a2a2a]">

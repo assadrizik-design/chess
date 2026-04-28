@@ -3,8 +3,8 @@ import { Chess, Square } from 'chess.js';
 import { Chessboard } from 'react-chessboard';
 import { ChessEngine } from '../engine/Stockfish';
 import { Search, Bot, Users, Swords, RefreshCw, Cpu, Trophy, AlertTriangle, Loader2, Clock, Hourglass, User, Check, Globe } from 'lucide-react';
-const chessBanner = 'https://img.sanishtech.com/u/84bee4c146cf0263c8a3022ae33b76d9.png';
-const chessLogo = 'https://img.sanishtech.com/u/a00ba3f0a44eb35af254c3875075c2c8.png';
+const chessBanner = 'https://i.postimg.cc/CMjdMqJH/chess-banner.png';
+const chessLogo = 'https://i.postimg.cc/90348Pbf/chess.png';
 
 import Peer, { DataConnection } from 'peerjs';
 import clsx from 'clsx';
@@ -107,13 +107,29 @@ export const Home: React.FC<{ onNavigate: (p: string) => void, onGameChange?: (i
           opponent = 'لاعب أونلاين';
       }
 
-      historyArr.push({
+      let userResult: 'win' | 'loss' | 'draw' | undefined = undefined;
+      const currentBoardOrientation = gameMode === 'online' && !isHost ? 'black' : 'white';
+      const userColorStr = currentBoardOrientation === 'white' ? 'الأبيض' : 'الأسود';
+      const oppColorStr = currentBoardOrientation === 'white' ? 'الأسود' : 'الأبيض';
+
+      if (gameMode !== 'local') {
+          if (outcomeStr.includes('تعادل') || outcomeStr.includes('ستالميت') || outcomeStr.includes('تكرار')) {
+              userResult = 'draw';
+          } else if (outcomeStr.includes(`فاز ${userColorStr}`)) {
+              userResult = 'win';
+          } else if (outcomeStr.includes(`فاز ${oppColorStr}`)) {
+              userResult = 'loss';
+          }
+      }
+
+      historyArr.unshift({
         id: Date.now().toString() + '-' + Math.random().toString(36).substring(2, 9),
         date: new Date().toISOString(),
         moves: currGame.history(),
         outcome: outcomeStr,
         opponent: opponent,
-        finalFen: currGame.fen()
+        finalFen: currGame.fen(),
+        userResult: userResult
       });
       localStorage.setItem('chess_history', JSON.stringify(historyArr));
     } catch (e) {
@@ -931,12 +947,14 @@ export const Home: React.FC<{ onNavigate: (p: string) => void, onGameChange?: (i
                   >
                     انسحاب
                   </button>
-                  <button 
-                    onClick={initGame} 
-                    className="bg-transparent hover:bg-[#222] border border-[#2a2a2a] px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-widest font-bold transition-colors flex items-center gap-2 text-gray-400 hover:text-white focus:outline-none"
-                  >
-                    <RefreshCw size={14} /> إعادة اللعبة
-                  </button>
+                  {gameMode !== 'online' && (
+                    <button 
+                      onClick={initGame} 
+                      className="bg-transparent hover:bg-[#222] border border-[#2a2a2a] px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-widest font-bold transition-colors flex items-center gap-2 text-gray-400 hover:text-white focus:outline-none"
+                    >
+                      <RefreshCw size={14} /> إعادة اللعبة
+                    </button>
+                  )}
                 </div>
             </div>
           </div>
