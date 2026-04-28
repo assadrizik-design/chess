@@ -85,8 +85,10 @@ export const Profile: React.FC = () => {
         setReplayFen(c.fen());
         setReplayIndex(replayIndex + 1);
       } catch(e) {
-        alert("عذراً، هذا السجل قديم أو يفتقر للحركات الكاملة ولا يمكن إعادته.");
-        console.error(e);
+        console.error("Move parse error in legacy history.", e);
+        setReplayFen(replayingGame.finalFen);
+        setReplayIndex(replayingGame.moves.length);
+        alert("تنبيه: هذا السجل قديم وتم إظهار النتيجة النهائية مباشرة لأنه يفتقر للحركات الكاملة منذ البداية.");
       }
     }
   };
@@ -102,8 +104,9 @@ export const Profile: React.FC = () => {
         setReplayFen(c.fen());
         setReplayIndex(replayIndex - 1);
       } catch(e) {
-        alert("عذراً، هذا السجل قديم أو يفتقر للحركات الكاملة ولا يمكن إعادته.");
-        console.error(e);
+        console.error("Move parse error in legacy history.", e);
+        setReplayFen('start');
+        setReplayIndex(0);
       }
     }
   };

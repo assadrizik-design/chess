@@ -947,8 +947,8 @@ export const Home: React.FC<{
                     <span className="text-sm font-bold text-amber-500 mb-1">
                       يبحث عن خصم...
                     </span>
-                    <span className="text-xs text-gray-400 mb-4">
-                      يرجى الانتظار، سيتم بدء المباراة فور دخول لاعب آخر.
+                    <span className="text-xs text-amber-500/80 mb-4 font-bold">
+                      ملاحظة: تعتمد هذه اللعبة على اتصال مباشر (Peer-to-Peer) وتتطلب من لاعب آخر الضغط على زر البحث في نفس الوقت.
                     </span>
                     <button
                       onClick={cancelMatchmaking}
@@ -1036,8 +1036,7 @@ export const Home: React.FC<{
             <div className="flex justify-between items-center mb-6 px-1">
               <button
                 onClick={() => {
-                  setGameMode("menu");
-                  connection?.close();
+                  endOnlineMatch();
                 }}
                 className="bg-[#222] hover:bg-[#333] border border-[#2a2a2a] px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors flex items-center gap-2 text-gray-400 hover:text-white"
               >
