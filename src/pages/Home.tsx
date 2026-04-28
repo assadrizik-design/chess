@@ -947,8 +947,8 @@ export const Home: React.FC<{
                     <span className="text-sm font-bold text-amber-500 mb-1">
                       يبحث عن خصم...
                     </span>
-                    <span className="text-xs text-amber-500/80 mb-4 font-bold">
-                      ملاحظة: تعتمد هذه اللعبة على اتصال مباشر (Peer-to-Peer) وتتطلب من لاعب آخر الضغط على زر البحث في نفس الوقت.
+                    <span className="text-xs text-gray-400 mb-4">
+                      يرجى الانتظار، سيتم بدء المباراة فور دخول لاعب آخر.
                     </span>
                     <button
                       onClick={cancelMatchmaking}

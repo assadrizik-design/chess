@@ -74,40 +74,35 @@ export const Profile: React.FC = () => {
     setReplayingGame(null);
   };
 
+  const jumpToMove = (index: number) => {
+    if (!replayingGame) return;
+    try {
+      const c = new Chess();
+      for (let i = 0; i <= index; i++) {
+        c.move(replayingGame.moves[i]);
+      }
+      setReplayFen(c.fen());
+      setReplayIndex(index + 1);
+    } catch (e) {
+      console.error("Move parse error in legacy history.", e);
+      setReplayFen(replayingGame.finalFen || "start");
+      setReplayIndex(replayingGame.moves.length);
+      alert("عفواً، لا يمكن التنقل في هذا السجل القديم لأنه غير مكتمل.");
+    }
+  };
+
   const stepForward = () => {
     if (!replayingGame) return;
-    if (replayIndex < replayingGame.moves.length) {
-      try {
-        const c = new Chess();
-        for (let i = 0; i <= replayIndex; i++) {
-          c.move(replayingGame.moves[i]);
-        }
-        setReplayFen(c.fen());
-        setReplayIndex(replayIndex + 1);
-      } catch(e) {
-        console.error("Move parse error in legacy history.", e);
-        setReplayFen(replayingGame.finalFen);
-        setReplayIndex(replayingGame.moves.length);
-        alert("تنبيه: هذا السجل قديم وتم إظهار النتيجة النهائية مباشرة لأنه يفتقر للحركات الكاملة منذ البداية.");
-      }
-    }
+    jumpToMove(replayIndex);
   };
 
   const stepBackward = () => {
     if (!replayingGame) return;
-    if (replayIndex > 0) {
-      try {
-        const c = new Chess();
-        for (let i = 0; i < replayIndex - 1; i++) {
-          c.move(replayingGame.moves[i]);
-        }
-        setReplayFen(c.fen());
-        setReplayIndex(replayIndex - 1);
-      } catch(e) {
-        console.error("Move parse error in legacy history.", e);
-        setReplayFen('start');
-        setReplayIndex(0);
-      }
+    if (replayIndex > 1) {
+      jumpToMove(replayIndex - 2);
+    } else if (replayIndex === 1) {
+      setReplayFen("start");
+      setReplayIndex(0);
     }
   };
 
@@ -364,23 +359,29 @@ export const Profile: React.FC = () => {
                     <span className="w-8 font-bold text-gray-600 group-hover:text-amber-500">
                       {i + 1}.
                     </span>
-                    <span
+                    <button
+                      onClick={() => jumpToMove(i * 2)}
                       className={clsx(
-                        "w-16",
+                        "w-16 text-right hover:text-amber-300 transition-colors focus:outline-none",
                         replayIndex === i * 2 + 1 &&
                           "text-white border-b border-white",
                       )}
                     >
                       {replayingGame.moves[i * 2]}
-                    </span>
-                    <span
-                      className={clsx(
-                        "w-16",
-                        replayIndex === i * 2 + 2 &&
-                          "text-white border-b border-white",
+                    </button>
+                    <span className="w-16">
+                      {i * 2 + 1 < replayingGame.moves.length && (
+                        <button
+                          onClick={() => jumpToMove(i * 2 + 1)}
+                          className={clsx(
+                            "w-full text-right hover:text-amber-300 transition-colors focus:outline-none",
+                            replayIndex === i * 2 + 2 &&
+                              "text-white border-b border-white",
+                          )}
+                        >
+                          {replayingGame.moves[i * 2 + 1]}
+                        </button>
                       )}
-                    >
-                      {replayingGame.moves[i * 2 + 1] || ""}
                     </span>
                   </div>
                 ))}
