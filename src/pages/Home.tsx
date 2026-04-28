@@ -17,6 +17,7 @@ import {
   User,
   Check,
   Globe,
+  History,
 } from "lucide-react";
 const chessBanner = "https://i.postimg.cc/CMjdMqJH/chess-banner.png";
 const chessLogo = "https://i.postimg.cc/90348Pbf/chess.png";
@@ -35,8 +36,14 @@ export const Home: React.FC<{
 }> = ({ onNavigate, onGameChange }) => {
   const [game, setGame] = useState(new Chess());
   const [gameMode, setGameMode] = useState<
-    "menu" | "bot-setup" | "bot" | "online"
+    "menu" | "bot-setup" | "bot" | "online" | "history-list" | "history-review"
   >("menu");
+  
+  // History review states
+  const [historyMatches, setHistoryMatches] = useState<any[]>([]);
+  const [reviewMoves, setReviewMoves] = useState<string[]>([]);
+  const [reviewIndex, setReviewIndex] = useState(0);
+  const [reviewGameTracker, setReviewGameTracker] = useState(new Chess());
 
   useEffect(() => {
     if (onGameChange) {
@@ -224,6 +231,29 @@ export const Home: React.FC<{
     }
     return () => clearInterval(timer);
   }, [timerActive, gameOver, game]);
+
+  // History Helpers
+  const openHistoryList = () => {
+    const saved = localStorage.getItem("chess_history");
+    setHistoryMatches(saved ? JSON.parse(saved) : []);
+    setGameMode("history-list");
+  };
+
+  const openHistoryReview = (match: any) => {
+    const moves = match.moves || [];
+    setReviewMoves(moves);
+    updateReviewBoard(moves.length, moves);
+    setGameMode("history-review");
+  };
+
+  const updateReviewBoard = (index: number, moves = reviewMoves) => {
+    const g = new Chess();
+    for(let i = 0; i < index; i++) {
+      g.move(moves[i]);
+    }
+    setReviewGameTracker(g);
+    setReviewIndex(index);
+  };
 
   const initGame = () => {
     const newGame = new Chess();
@@ -947,6 +977,19 @@ export const Home: React.FC<{
               </div>
             </div>
           </div>
+
+          <button
+            onClick={openHistoryList}
+            className="w-full max-w-2xl mx-auto mt-6 py-4 px-4 bg-[#222] hover:bg-[#333] border border-[#2a2a2a] text-white font-bold rounded-xl text-sm flex flex-col items-center justify-center shadow-lg transition-colors focus:ring-2 focus:ring-amber-500"
+          >
+            <div className="flex items-center gap-2 text-xl mb-1">
+              <History size={24} className="text-amber-500" />
+              سجل المباريات
+            </div>
+            <div className="text-gray-400 text-xs text-center px-1">
+              تصفح وراجع مبارياتك السابقة بالتفصيل واستعرض كامل الحركات.
+            </div>
+          </button>
         </div>
       )}
 
@@ -1002,14 +1045,21 @@ export const Home: React.FC<{
         </div>
       )}
 
-      {gameMode !== "menu" && gameMode !== "bot-setup" && (
+      {(gameMode === "online" || gameMode === "bot") && (
         <div className="w-full max-w-6xl flex flex-col lg:flex-row gap-8 lg:items-start items-center relative z-10">
           {/* Main Board Area */}
           <div className="bg-[#111] p-4 sm:p-6 rounded-2xl border border-[#2a2a2a] shadow-2xl flex-shrink-0 w-[100vw] sm:w-[500px] md:w-[600px] overflow-hidden">
             {/* Header Game Info */}
             <div className="flex justify-between items-center mb-6 px-1">
               <button
-                onClick={cleanupConnection}
+                onClick={() => {
+                  if (gameMode === "online" && !gameOver) {
+                    alert("يجب الانسحاب من المباراة أولاً قبل العودة للقائمة الرئيسية.");
+                    return;
+                  }
+                  cleanupConnection();
+                  setGameMode("menu");
+                }}
                 className="bg-[#222] hover:bg-[#333] border border-[#2a2a2a] px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors flex items-center gap-2 text-gray-400 hover:text-white"
               >
                 العودة للقائمة
@@ -1294,6 +1344,138 @@ export const Home: React.FC<{
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {gameMode === "history-list" && (
+        <div className="bg-[#161616] border border-[#2a2a2a] w-full max-w-4xl rounded-xl p-8 shadow-2xl z-10 animate-fade-in-up">
+           <div className="flex justify-between items-center mb-8 border-b border-[#2a2a2a] pb-4">
+             <h2 className="text-2xl font-bold text-amber-500 flex items-center gap-3">
+               <History size={28} />
+               سجل المباريات
+             </h2>
+             <button onClick={() => setGameMode("menu")} className="text-gray-400 font-bold text-sm bg-[#222] hover:bg-[#333] hover:text-white px-5 py-2 rounded-lg border border-[#333] transition-colors">
+               العودة للقائمة
+             </button>
+           </div>
+           
+           <div className="flex flex-col gap-3 max-h-[60vh] overflow-y-auto px-2 custom-scrollbar">
+             {historyMatches.length === 0 ? (
+               <div className="text-gray-500 py-10 text-center font-bold">لا توجد مباريات سابقة بعد.</div>
+             ) : historyMatches.map((m, i) => (
+               <button key={i} onClick={() => openHistoryReview(m)} className="flex flex-col sm:flex-row sm:items-center justify-between p-5 bg-[#222] hover:bg-[#333] border border-[#2a2a2a] rounded-lg transition-colors group text-right">
+                 <div className="flex flex-col mb-3 sm:mb-0">
+                   <div className="text-xl text-[#e0e0e0] font-bold mb-1 group-hover:text-amber-500 transition-colors">ضد: {m.opponent}</div>
+                   <div className="text-xs text-gray-500">{new Date(m.date).toLocaleString()}</div>
+                 </div>
+                 <div className="flex flex-col items-start sm:items-end p-3 bg-[#111] rounded border border-[#2a2a2a] min-w-[150px]">
+                   <div className={cn("font-bold text-sm", m.userResult === "win" ? "text-green-500" : m.userResult === "loss" ? "text-red-500" : "text-gray-400")}>{m.outcome}</div>
+                   <div className="text-[10px] text-gray-500 mt-2 font-mono" dir="ltr">{m.moves?.length || 0} moves</div>
+                 </div>
+               </button>
+             ))}
+           </div>
+        </div>
+      )}
+
+      {gameMode === "history-review" && (
+        <div className="w-full max-w-6xl flex flex-col lg:flex-row gap-8 lg:items-start items-center relative z-10 animate-fade-in-up">
+           <div className="bg-[#111] p-4 sm:p-6 rounded-2xl border border-[#2a2a2a] shadow-2xl flex-shrink-0 w-[100vw] sm:w-[500px] md:w-[600px] overflow-hidden">
+              <div className="flex justify-between items-center mb-6 px-1 border-b border-[#2a2a2a] pb-4">
+                <button
+                  onClick={() => setGameMode("history-list")}
+                  className="bg-[#222] hover:bg-[#333] border border-[#2a2a2a] px-4 py-1.5 rounded-lg text-xs font-bold transition-colors text-gray-400 hover:text-white"
+                >
+                  العودة للسجل
+                </button>
+                <div className="text-amber-500 font-bold flex items-center gap-2">
+                  <History size={18} />
+                  وضع المراجعة
+                </div>
+              </div>
+              
+              <div className="relative rounded bg-[#222] border-4 border-[#222] shadow-black shadow-2xl flex flex-col">
+                <Chessboard
+                  options={{
+                    position: reviewGameTracker.fen(),
+                    darkSquareStyle: { backgroundColor: "#714e3b" },
+                    lightSquareStyle: { backgroundColor: "#d4b58c" },
+                    animationDurationInMs: 200,
+                  }}
+                />
+              </div>
+
+              <div className="mt-6 flex justify-center items-center gap-4 bg-[#1e1e1e] p-4 rounded-xl border border-[#2a2a2a]">
+                 <button 
+                   onClick={() => updateReviewBoard(0)} 
+                   disabled={reviewIndex === 0}
+                   className="p-2 bg-[#111] border border-[#2a2a2a] rounded hover:bg-[#333] disabled:opacity-50 text-gray-400 hover:text-white"
+                 >
+                   &lt;&lt;
+                 </button>
+                 <button 
+                   onClick={() => updateReviewBoard(reviewIndex - 1)} 
+                   disabled={reviewIndex === 0}
+                   className="p-3 bg-[#222] border border-[#333] rounded hover:bg-[#444] disabled:opacity-50 text-white font-bold min-w-[100px]"
+                 >
+                   تراجع
+                 </button>
+                 <span className="font-mono text-amber-500 px-3 font-bold bg-[#111] py-1 rounded">
+                   {Math.ceil(reviewIndex / 2)}
+                 </span>
+                 <button 
+                   onClick={() => updateReviewBoard(reviewIndex + 1)} 
+                   disabled={reviewIndex === reviewMoves.length}
+                   className="p-3 bg-[#222] border border-[#333] rounded hover:bg-[#444] disabled:opacity-50 text-white font-bold min-w-[100px]"
+                 >
+                   التالي
+                 </button>
+                 <button 
+                   onClick={() => updateReviewBoard(reviewMoves.length)} 
+                   disabled={reviewIndex === reviewMoves.length}
+                   className="p-2 bg-[#111] border border-[#2a2a2a] rounded hover:bg-[#333] disabled:opacity-50 text-gray-400 hover:text-white"
+                 >
+                   &gt;&gt;
+                 </button>
+              </div>
+           </div>
+
+           <div className="flex-grow w-full max-w-md lg:w-72 flex flex-col gap-4">
+              <div className="bg-[#161616] border border-[#2a2a2a] rounded-xl flex-1 flex flex-col overflow-hidden min-h-[300px]">
+                <div className="p-4 border-b border-[#2a2a2a] text-[10px] font-bold text-gray-500 uppercase tracking-widest text-center">
+                  جميع الحركات ({reviewMoves.length})
+                </div>
+                <div className="flex-1 overflow-y-auto p-2 custom-scrollbar space-y-1 font-mono text-xs" dir="ltr">
+                  {reviewMoves.length === 0 ? (
+                    <div className="text-gray-600 text-center mt-10 h-full flex items-center justify-center font-sans" dir="rtl">
+                      لا توجد حركات.
+                    </div>
+                  ) : (
+                    Array.from({ length: Math.ceil(reviewMoves.length / 2) }).map((_, i) => (
+                      <div key={i} className="flex justify-between px-3 py-1 rounded text-gray-300">
+                        <span className="w-8 text-gray-600 font-bold">{i + 1}.</span>
+                        <button 
+                          onClick={() => updateReviewBoard(i * 2 + 1)}
+                          className={cn("w-16 text-left hover:text-amber-500", reviewIndex === i * 2 + 1 ? "text-amber-500 font-bold bg-[#2a2a2a] px-1 rounded" : "")}
+                        >
+                          {reviewMoves[i * 2]}
+                        </button>
+                        {reviewMoves[i * 2 + 1] ? (
+                          <button 
+                            onClick={() => updateReviewBoard(i * 2 + 2)}
+                            className={cn("w-16 text-left hover:text-amber-500", reviewIndex === i * 2 + 2 ? "text-amber-500 font-bold bg-[#2a2a2a] px-1 rounded" : "")}
+                          >
+                            {reviewMoves[i * 2 + 1]}
+                          </button>
+                        ) : (
+                          <span className="w-16" />
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+           </div>
         </div>
       )}
     </div>
