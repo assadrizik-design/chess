@@ -74,35 +74,27 @@ export const Profile: React.FC = () => {
     setReplayingGame(null);
   };
 
-  const jumpToMove = (index: number) => {
+  const stepForward = () => {
     if (!replayingGame) return;
-    try {
+    if (replayIndex < replayingGame.moves.length) {
       const c = new Chess();
-      for (let i = 0; i <= index; i++) {
+      for (let i = 0; i <= replayIndex; i++) {
         c.move(replayingGame.moves[i]);
       }
       setReplayFen(c.fen());
-      setReplayIndex(index + 1);
-    } catch (e) {
-      console.error("Move parse error in legacy history.", e);
-      setReplayFen(replayingGame.finalFen || "start");
-      setReplayIndex(replayingGame.moves.length);
-      alert("عفواً، لا يمكن التنقل في هذا السجل القديم لأنه غير مكتمل.");
+      setReplayIndex(replayIndex + 1);
     }
-  };
-
-  const stepForward = () => {
-    if (!replayingGame) return;
-    jumpToMove(replayIndex);
   };
 
   const stepBackward = () => {
     if (!replayingGame) return;
-    if (replayIndex > 1) {
-      jumpToMove(replayIndex - 2);
-    } else if (replayIndex === 1) {
-      setReplayFen("start");
-      setReplayIndex(0);
+    if (replayIndex > 0) {
+      const c = new Chess();
+      for (let i = 0; i < replayIndex - 1; i++) {
+        c.move(replayingGame.moves[i]);
+      }
+      setReplayFen(c.fen());
+      setReplayIndex(replayIndex - 1);
     }
   };
 
@@ -359,29 +351,23 @@ export const Profile: React.FC = () => {
                     <span className="w-8 font-bold text-gray-600 group-hover:text-amber-500">
                       {i + 1}.
                     </span>
-                    <button
-                      onClick={() => jumpToMove(i * 2)}
+                    <span
                       className={clsx(
-                        "w-16 text-right hover:text-amber-300 transition-colors focus:outline-none",
+                        "w-16",
                         replayIndex === i * 2 + 1 &&
                           "text-white border-b border-white",
                       )}
                     >
                       {replayingGame.moves[i * 2]}
-                    </button>
-                    <span className="w-16">
-                      {i * 2 + 1 < replayingGame.moves.length && (
-                        <button
-                          onClick={() => jumpToMove(i * 2 + 1)}
-                          className={clsx(
-                            "w-full text-right hover:text-amber-300 transition-colors focus:outline-none",
-                            replayIndex === i * 2 + 2 &&
-                              "text-white border-b border-white",
-                          )}
-                        >
-                          {replayingGame.moves[i * 2 + 1]}
-                        </button>
+                    </span>
+                    <span
+                      className={clsx(
+                        "w-16",
+                        replayIndex === i * 2 + 2 &&
+                          "text-white border-b border-white",
                       )}
+                    >
+                      {replayingGame.moves[i * 2 + 1] || ""}
                     </span>
                   </div>
                 ))}

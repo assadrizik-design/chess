@@ -192,22 +192,6 @@ export const Home: React.FC<{
     saveToHistory(game, outcomeStr);
   };
 
-  const endOnlineMatch = () => {
-    if (connection) {
-      connection.close();
-      setConnection(null);
-    }
-    if (peerInstance.current) {
-      peerInstance.current.destroy();
-      peerInstance.current = null;
-    }
-    setGameMode("menu");
-    setMatchmakingState("idle");
-    setStatusText("جاهز للعب");
-    setGameOver("");
-    initGame();
-  };
-
   useEffect(() => {
     let timer: any;
     if (
@@ -351,13 +335,7 @@ export const Home: React.FC<{
     gameOver,
   ]);
 
-  const startMatchmaking = (lobbyIndex = 1) => {
-    if (lobbyIndex > 10) {
-      setMatchmakingState("idle");
-      setStatusText("تعذر العثور على سيرفر متاح. يرجى المحاولة لاحقاً.");
-      return;
-    }
-
+  const startMatchmaking = () => {
     setMatchmakingState("searching");
     setStatusText("جاري البحث عن لاعب...");
 
@@ -367,7 +345,7 @@ export const Home: React.FC<{
       peerInstance.current = null;
     }
 
-    const LOBBY_ID = `CHESS_ARABIC_PRO_LOBBY_v5_${lobbyIndex}`;
+    const LOBBY_ID = "CHESS_ARABIC_PRO_LOBBY_v3";
     const PeerJS = (Peer as any).default || Peer;
     const lobbyPeer = new PeerJS(LOBBY_ID);
 
@@ -397,20 +375,9 @@ export const Home: React.FC<{
 
         clientPeer.on("open", () => {
           const conn = clientPeer.connect(LOBBY_ID);
-          let receivedRedirect = false;
-
-          const ghostTimeout = setTimeout(() => {
-            if (!receivedRedirect && peerInstance.current === clientPeer) {
-              // Ghost lobby detected!
-              clientPeer.destroy();
-              startMatchmaking(lobbyIndex + 1); // Try next lobby
-            }
-          }, 4000);
 
           conn.on("data", (data: any) => {
             if (data.type === "REDIRECT") {
-              receivedRedirect = true;
-              clearTimeout(ghostTimeout);
               clientPeer.destroy();
               setTimeout(() => {
                 setupMatchClient(data.matchId);
@@ -419,11 +386,10 @@ export const Home: React.FC<{
           });
 
           conn.on("error", () => {
-            clearTimeout(ghostTimeout);
             // Could fail if lobby was destroyed exactly now
             clientPeer.destroy();
             setTimeout(() => {
-              if (peerInstance.current === clientPeer) startMatchmaking(lobbyIndex);
+              if (peerInstance.current === clientPeer) startMatchmaking();
             }, 1000);
           });
         });
@@ -1054,7 +1020,8 @@ export const Home: React.FC<{
             <div className="flex justify-between items-center mb-6 px-1">
               <button
                 onClick={() => {
-                  endOnlineMatch();
+                  setGameMode("menu");
+                  connection?.close();
                 }}
                 className="bg-[#222] hover:bg-[#333] border border-[#2a2a2a] px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors flex items-center gap-2 text-gray-400 hover:text-white"
               >
@@ -1262,22 +1229,13 @@ export const Home: React.FC<{
               </div>
 
               <div className="flex items-center gap-2">
-                {gameMode === "online" && gameOver ? (
-                  <button
-                    onClick={endOnlineMatch}
-                    className="bg-amber-600 hover:bg-amber-500 text-black px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-widest font-bold transition-colors"
-                  >
-                    إنهاء المباراة
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleResign}
-                    disabled={!!gameOver}
-                    className="bg-red-900/20 hover:bg-red-900/40 border border-red-900/50 text-red-500 px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-widest font-bold transition-colors disabled:opacity-50"
-                  >
-                    انسحاب
-                  </button>
-                )}
+                <button
+                  onClick={handleResign}
+                  disabled={!!gameOver}
+                  className="bg-red-900/20 hover:bg-red-900/40 border border-red-900/50 text-red-500 px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-widest font-bold transition-colors disabled:opacity-50"
+                >
+                  انسحاب
+                </button>
                 {gameMode !== "online" && (
                   <button
                     onClick={initGame}
